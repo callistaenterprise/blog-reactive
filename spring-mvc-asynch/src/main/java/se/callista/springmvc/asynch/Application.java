@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAware;
+import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 import se.callista.springmvc.asynch.config.MyEmbeddedServletContainerCustomizer;
 
 @ComponentScan()
@@ -48,6 +49,12 @@ public class Application {
     public AsyncHttpClientLambdaAware getAsyncHttpClient() {
         LOG.info("### Creates a new AsyncHttpClientLambdaAware-object");
         return new AsyncHttpClientLambdaAware();
+    }
+
+    @Bean
+    public AsyncHttpClientRx getHttpClientRx() {
+        LOG.info("### Creates a new AsyncHttpClientRx-object");
+        return new AsyncHttpClientRx();
     }
 
     public static void main(String[] args) {

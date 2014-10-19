@@ -65,4 +65,19 @@ public class RoutingSlipControllerTest extends AsynchTestBase {
                 .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
                 .andExpect(content().string(expectedResult));
     }
+
+    @Test
+    public void testRoutingSlipNonBlockingRx() throws Exception {
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/routing-slip-non-blocking-rx"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
+                .andExpect(content().string(expectedResult));
+    }
 }
