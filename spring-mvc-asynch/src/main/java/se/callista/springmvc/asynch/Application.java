@@ -1,5 +1,6 @@
 package se.callista.springmvc.asynch;
 
+import akka.actor.ActorSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientAkka;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAware;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
@@ -62,6 +64,18 @@ public class Application {
     public AsyncHttpClientJava8 getHttpClientJava8() {
         LOG.info("### Creates a new AsyncHttpClientJava8-object");
         return new AsyncHttpClientJava8();
+    }
+
+    @Bean
+    public AsyncHttpClientAkka getHttpClientAkka() {
+        LOG.info("### Creates a new AsyncHttpClientAkka-object");
+        return new AsyncHttpClientAkka();
+    }
+
+    @Bean
+    public ActorSystem getActorSystem() {
+        LOG.info("### Creates a new Akka actor system");
+        return ActorSystem.create("actorSystem");
     }
 
     public static void main(String[] args) {
