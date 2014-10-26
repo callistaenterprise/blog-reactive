@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAware;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 import se.callista.springmvc.asynch.config.MyEmbeddedServletContainerCustomizer;
@@ -55,6 +56,12 @@ public class Application {
     public AsyncHttpClientRx getHttpClientRx() {
         LOG.info("### Creates a new AsyncHttpClientRx-object");
         return new AsyncHttpClientRx();
+    }
+
+    @Bean
+    public AsyncHttpClientJava8 getHttpClientJava8() {
+        LOG.info("### Creates a new AsyncHttpClientJava8-object");
+        return new AsyncHttpClientJava8();
     }
 
     public static void main(String[] args) {
