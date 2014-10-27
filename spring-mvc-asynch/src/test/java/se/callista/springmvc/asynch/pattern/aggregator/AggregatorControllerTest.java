@@ -106,6 +106,21 @@ public class AggregatorControllerTest extends AsynchTestBase {
     }
 
     @Test
+    public void testAggregatorNonBlockingAkkaFutures() throws Exception {
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-akkafutures?minMs=2000&maxMs=2000"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
+                .andExpect(content().string(expectedResult));
+    }
+
+    @Test
     public void testAggregatorNonBlockingLambdaTimeout() throws Exception {
 
         int minMs = (TIMEOUT_MS < 1000) ? 0 : TIMEOUT_MS - 1000;
@@ -147,6 +162,40 @@ public class AggregatorControllerTest extends AsynchTestBase {
         int dbHits = 10;
 
         MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-rx?dbHits=" + dbHits + "&minMs=" + minMs + "&maxMs=" + maxMs))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"));
+
+        String result = mvcResult.getAsyncResult().toString();
+
+        LOG.debug("JSON: {}", result);
+        String[] psArr = result.split("\n");
+
+        // Verify that we got some timeouts
+        assertTrue("Expected at least one timeout to occur", psArr.length < dbHits);
+
+        LOG.debug("assert that no response time was over the timeout: {}", TIMEOUT_MS);
+        ObjectMapper mapper = new ObjectMapper();
+        for (int i = 0; i < psArr.length; i++) {
+            ProcessingStatus ps = mapper.readValue(psArr[i], ProcessingStatus.class);
+            LOG.debug("psArr: {} - {}", ps.getStatus(), ps.getProcessingTimeMs());
+            assertTrue(ps.getProcessingTimeMs() < TIMEOUT_MS);
+        }
+    }
+
+    @Test
+    public void testAggregatorNonBlockingAkkaFuturesTimeout() throws Exception {
+
+        int minMs = (TIMEOUT_MS < 1000) ? 0 : TIMEOUT_MS - 1000;
+        int maxMs = TIMEOUT_MS + 1000;
+        int dbHits = 10;
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-akkafutures?dbHits=" + dbHits + "&minMs=" + minMs + "&maxMs=" + maxMs))
                 .andExpect(request().asyncStarted())
                 .andReturn();
 

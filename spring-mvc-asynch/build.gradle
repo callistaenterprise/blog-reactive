@@ -33,6 +33,7 @@ dependencies {
     compile("javax.xml.bind:jaxb-api:2.1")
     compile("com.sun.xml.bind:jaxb-impl:2.1.9")
     compile("io.reactivex:rxjava:1.0.0-rc.7")
+    compile("com.typesafe.akka:akka-actor_2.11:2.3.6")
     compile 'ch.qos.logback:logback-classic:1.1.2'
     testCompile("org.springframework.boot:spring-boot-starter-test")
 //    testCompile("com.github.tomakehurst:wiremock:1.46")
