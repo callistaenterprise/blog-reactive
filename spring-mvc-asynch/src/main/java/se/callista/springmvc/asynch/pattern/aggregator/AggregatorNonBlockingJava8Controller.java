@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -64,7 +65,7 @@ public class AggregatorNonBlockingJava8Controller {
 		return sequence(urls
 				.stream()
 				.map(url -> asyncHttpClientJava8.execute(url))
-				.map(f -> f.thenApply(this::getResponseBody))
+				.map(f -> f.thenApply(getResponseBody()).exceptionally(t -> "error"))
 				.collect(Collectors.toList()));
 	}
 
@@ -84,12 +85,15 @@ public class AggregatorNonBlockingJava8Controller {
 				.thenApply(noOfCalls -> Collections.nCopies(noOfCalls, url));
 	}
 
-	private String getResponseBody(Response response) {
-		try {
-			return response.getResponseBody();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+
+	private Function<Response, String> getResponseBody() {
+		return (response -> {
+			try {
+				return response.getResponseBody();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	private String getTotalResult(List<String> resultArr) {

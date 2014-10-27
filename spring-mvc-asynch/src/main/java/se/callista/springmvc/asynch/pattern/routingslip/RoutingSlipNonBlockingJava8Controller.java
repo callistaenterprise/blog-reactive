@@ -52,7 +52,7 @@ public class RoutingSlipNonBlockingJava8Controller {
         return asyncHttpClientJava8
                 .execute(getUrl(num))
                 .thenApply(logResponse(num))
-                .thenApply(getResponseBody())
+                .thenApply(getResponseBody()).exceptionally(t -> "error")
                 .thenApply(addBodyToResult(result));
     }
 
