@@ -64,13 +64,11 @@ public class AggregatorNonBlockingRxController {
                         s.onNext(dbLookup.executeDbLookup())
                 )
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
-                .flatMap(noOfCalls ->
-                                Observable.just(url).repeat(noOfCalls)
-                )
+                .flatMap(noOfCalls -> Observable.just(url).repeat(noOfCalls))
                 .flatMap(u ->
-                                asyncHttpClientRx.observable(u)
-                                        .map(this::getResponseBody)
-                                        .onErrorReturn(t -> "error")
+                        asyncHttpClientRx.observable(u)
+                                .map(this::getResponseBody)
+                                .onErrorReturn(t -> "error")
                 )
                 .buffer(TIMEOUT_MS, TimeUnit.MILLISECONDS, dbHits)
                 .subscribe(v -> deferredResult.setResult(getTotalResult(v)));

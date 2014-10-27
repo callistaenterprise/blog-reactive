@@ -91,6 +91,21 @@ public class AggregatorControllerTest extends AsynchTestBase {
     }
 
     @Test
+    public void testAggregatorNonBlockingJava8() throws Exception {
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-java8?minMs=2000&maxMs=2000"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
+                .andExpect(content().string(expectedResult));
+    }
+
+    @Test
     public void testAggregatorNonBlockingLambdaTimeout() throws Exception {
 
         int minMs = (TIMEOUT_MS < 1000) ? 0 : TIMEOUT_MS - 1000;
