@@ -7,6 +7,9 @@ import org.springframework.web.context.request.async.DeferredResult
 import se.callista.springmvc.asynch.commons.lambdasupport.AsyncHttpClientScala
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{duration, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 /**
  * Created by anders on 14-11-04.
@@ -23,30 +26,22 @@ class RoutingSlipNonBlockingScalaController {
 	@RequestMapping(Array("/routing-slip-non-blocking-scala"))
 	def nonBlockingRoutingSlip = {
 		val deferredResult = new DeferredResult[String]()
-
 		for {
-			r1 <- doAsyncCall(Nil, 1)
-			r2 <- doAsyncCall(r1, 2)
-			r3 <- doAsyncCall(r2, 3)
-			r4 <- doAsyncCall(r3, 4)
-			r5 <- doAsyncCall(r4, 5)
-		} yield deferredResult.setResult(r5.mkString("\n"))
+			r1 <- doAsyncCall(nonBlockingUrl(latency = 100 milliseconds))
+			r2 <- doAsyncCall(nonBlockingUrl(latency = 200 milliseconds))
+			r3 <- doAsyncCall(nonBlockingUrl(latency = 300 milliseconds))
+			r4 <- doAsyncCall(nonBlockingUrl(latency = 400 milliseconds))
+			r5 <- doAsyncCall(nonBlockingUrl(latency = 500 milliseconds))
+		} yield deferredResult.setResult(List(r1, r2, r3, r4, r5).mkString("\n"))
 
 		deferredResult
 	}
 
-	def doAsyncCall(result: List[String], num: Int) = {
-		AsyncHttpClientScala.execute(nbUrl(num))
-				.map(response => response.getResponseBody())
-				.map(x => {logger.debug("Got resp #{}", num);x})
-				.map(body => body :: result)
+	def doAsyncCall(url: String): Future[String] = {
+		AsyncHttpClientScala.execute(url).map(response => response.getResponseBody())
 	}
 
-	val nbUrl: Int => String = i => {
-		val t = i * 100
-		s"$SP_NON_BLOCKING_URL?minMs=$t&maxMs=$t"
-	}
-
+	def nonBlockingUrl(latency: Duration):String = s"$SP_NON_BLOCKING_URL?minMs=${latency.toMillis}&maxMs=${latency.toMillis}"
 }
 
 object RoutingSlipNonBlockingScalaController {
