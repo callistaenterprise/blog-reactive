@@ -14,11 +14,14 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.supplyAsync;
+import static java.util.function.Function.identity;
 
 @RestController
 public class AggregatorNonBlockingJava8Controller {
@@ -57,16 +60,33 @@ public class AggregatorNonBlockingJava8Controller {
 
 		dbLookup(dbLookupMs, dbHits, minMs, maxMs)
 				.thenCompose(urls -> executeRemoteHttpRequests(urls))
-				.thenApply(result -> deferredResult.setResult(getTotalResult(result)));
+				.thenApply(result -> deferredResult.setResult(result
+						.stream()
+							.map(getResponseBody())
+						.collect(Collectors.joining("\n"))));
+
 		return deferredResult;
 	}
 
-	public CompletableFuture<List<String>> executeRemoteHttpRequests(List<String> urls) {
+	public CompletableFuture<List<Response>> executeRemoteHttpRequests(List<String> urls) {
 		return sequence(urls
-				.stream()
-				.map(url -> asyncHttpClientJava8.execute(url))
-				.map(f -> f.thenApply(getResponseBody()).exceptionally(t -> "error"))
-				.collect(Collectors.toList()));
+						.stream()
+							.map(this::doAsyncCall)
+						.collect(Collectors.toList())
+				)
+				.thenApply(responses -> responses
+						.stream()
+							.filter(Optional::isPresent)
+							.map(Optional::get)
+						.collect(Collectors.toList())
+				);
+	}
+
+	private CompletableFuture<Optional<Response>> doAsyncCall(String url) {
+		return asyncHttpClientJava8.execute(url)
+				.thenApply(Optional::of)
+				.applyToEither(TimeoutDefault.with(TIMEOUT_MS), identity())
+				.exceptionally(t -> Optional.empty());
 	}
 
 	private static <T> CompletableFuture<List<T>> sequence(List<CompletableFuture<T>> futures) {
@@ -81,26 +101,20 @@ public class AggregatorNonBlockingJava8Controller {
 	private CompletableFuture<List<String>> dbLookup(int dbLookupMs, int dbHits, int minMs, int maxMs) {
 		final String url = SP_NON_BLOCKING_URL + "?minMs=" + minMs + "&maxMs=" + maxMs;
 		final DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
+
 		return supplyAsync(() -> dbLookup.executeDbLookup(), dbThreadPoolExecutor)
 				.thenApply(noOfCalls -> Collections.nCopies(noOfCalls, url));
 	}
 
 
 	private Function<Response, String> getResponseBody() {
-		return (response -> {
+		return response -> {
 			try {
 				return response.getResponseBody();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		});
-	}
-
-	private String getTotalResult(List<String> resultArr) {
-		String totalResult = "";
-		for (String r : resultArr)
-			totalResult += r + '\n';
-		return totalResult;
+		};
 	}
 
 }

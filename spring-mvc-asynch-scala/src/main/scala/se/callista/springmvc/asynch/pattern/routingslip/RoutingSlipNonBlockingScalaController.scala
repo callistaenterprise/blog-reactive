@@ -11,9 +11,7 @@ import scala.concurrent.{duration, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-/**
- * Created by anders on 14-11-04.
- */
+
 @RestController
 class RoutingSlipNonBlockingScalaController {
 
