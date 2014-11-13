@@ -30,8 +30,9 @@ public class Executor {
 
     private static final Logger LOG = LoggerFactory.getLogger(Executor.class);
     private static final AsyncHttpClientLambdaAware asyncHttpClient = new AsyncHttpClientLambdaAware();
+    private static Timer timer = new Timer();
+    private TimerTask timeoutTask = null;
     private List<ListenableFuture<Response>> concurrentExecutors = new ArrayList<>();
-    private Timer timer = new Timer();
     final AtomicInteger noOfResults = new AtomicInteger(0);
     private int noOfCalls = 0;
     private DeferredResult<String> deferredResult = null;
@@ -89,7 +90,7 @@ public class Executor {
             }
 
             // Setup a timer for the max wait-period
-            TimerTask timeoutTask = new TimerTask() {
+            timeoutTask = new TimerTask() {
 
                 @Override
                 public void run() {
@@ -124,7 +125,7 @@ public class Executor {
     }
 
     private void onAllCompleted() {
-        timer.cancel();
+        timeoutTask.cancel();
 
         if (deferredResult.isSetOrExpired()) {
             // TODO: Handle already set or expired error
