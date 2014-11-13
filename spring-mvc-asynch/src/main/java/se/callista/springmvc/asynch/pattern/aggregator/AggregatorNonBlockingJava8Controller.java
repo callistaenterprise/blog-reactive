@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -62,7 +61,7 @@ public class AggregatorNonBlockingJava8Controller {
 				.thenCompose(urls -> executeRemoteHttpRequests(urls))
 				.thenApply(result -> deferredResult.setResult(result
 						.stream()
-							.map(getResponseBody())
+							.map(extractResponseBody)
 						.collect(Collectors.joining("\n"))));
 
 		return deferredResult;
@@ -107,14 +106,13 @@ public class AggregatorNonBlockingJava8Controller {
 	}
 
 
-	private Function<Response, String> getResponseBody() {
-		return response -> {
-			try {
-				return response.getResponseBody();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		};
-	}
+	private Function<Response, String> extractResponseBody =
+			response -> {
+				try {
+					return response.getResponseBody();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			};
 
 }
