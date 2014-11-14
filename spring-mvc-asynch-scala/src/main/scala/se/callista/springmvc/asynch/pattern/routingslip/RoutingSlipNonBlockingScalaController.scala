@@ -22,7 +22,7 @@ class RoutingSlipNonBlockingScalaController {
 
 
 	@RequestMapping(Array("/routing-slip-non-blocking-scala"))
-	def nonBlockingRoutingSlip = {
+	def nonBlockingRoutingSlip: DeferredResult[String] = {
 		val deferredResult = new DeferredResult[String]()
 		for {
 			r1 <- doAsyncCall(nonBlockingUrl(latency = 100 milliseconds))

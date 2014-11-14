@@ -24,24 +24,9 @@ public class Application {
         return new MyEmbeddedServletContainerCustomizer();
     }
 
-    @Value("${threadPool.db.init_size}")
-    private int THREAD_POOL_DB_INIT_SIZE;
-
     @Value("${threadPool.db.max_size}")
     private int THREAD_POOL_DB_MAX_SIZE;
 
-    @Value("${threadPool.db.queue_size}")
-    private int THREAD_POOL_DB_QUEUE_SIZE;
-
-    @Bean(name="dbThreadPoolExecutor")
-    public TaskExecutor getTaskExecutor() {
-        ThreadPoolTaskExecutor tpte = new ThreadPoolTaskExecutor();
-        tpte.setCorePoolSize(THREAD_POOL_DB_INIT_SIZE);
-        tpte.setMaxPoolSize(THREAD_POOL_DB_MAX_SIZE);
-        tpte.setQueueCapacity(THREAD_POOL_DB_QUEUE_SIZE);
-        tpte.initialize();
-        return tpte;
-    }
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
