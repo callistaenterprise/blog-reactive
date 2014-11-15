@@ -28,7 +28,7 @@ class AggregatorNonBlockingScalaController {
 	private val scheduler = Executors.newScheduledThreadPool(1)
 	private val timeoutTimer = new Timer()
 
-	@RequestMapping(Array("/aggregator-non-blocking-scala"))
+	@RequestMapping(Array("/aggregate-non-blocking-scala"))
 	def nonBlockingAggregator (@RequestParam(value = "dbLookupMs", required = false, defaultValue = "0") dbLookupMs: Int,
 	                           @RequestParam(value = "dbHits", required = false, defaultValue = "3") dbHits: Int,
 	                           @RequestParam(value = "minMs", required = false, defaultValue = "0") minMs: Int,
