@@ -16,9 +16,6 @@ import se.callista.springmvc.asynch.config.MyEmbeddedServletContainerCustomizer;
 @EnableAutoConfiguration
 public class Application {
 
-    @SuppressWarnings("unused")
-    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
-
     @Bean
     public EmbeddedServletContainerCustomizer embeddedServletCustomizer(){
         return new MyEmbeddedServletContainerCustomizer();
@@ -27,6 +24,11 @@ public class Application {
     @Value("${threadPool.db.max_size}")
     private int THREAD_POOL_DB_MAX_SIZE;
 
+    @Value("${threadPool.db.init_size}")
+    private int THREAD_POOL_DB_INIT_SIZE;
+
+    @Value("${threadPool.db.queue_size}")
+    private int THREAD_POOL_DB_QUEUE_SIZE;
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
