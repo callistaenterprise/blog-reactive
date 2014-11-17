@@ -102,7 +102,7 @@ public class AggregatorControllerTest extends AsynchTestBase {
         this.mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
-                .andExpect(content().string(expectedResult));
+                .andExpect(content().string(expectedResult.trim()));
     }
 
     @Test
