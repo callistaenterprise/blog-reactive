@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.commons.io.IOUtils.write;
 
 /**
@@ -30,6 +31,17 @@ abstract public class AsynchTestBase extends EmbeddedHttpServerTestBase {
 
         int minMs = Integer.parseInt(parMap.get("minMs"));
         int maxMs = Integer.parseInt(parMap.get("maxMs"));
+
+        // Return a 500 error if max < min
+        if (maxMs < minMs) {
+            String msg = "Error: maxMs < minMs  (" + maxMs + " < " + minMs + ")";
+            LOG.error("Processing failed due to invalid input: " + msg);
+            response.setStatus(SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("text/plain;charset=ISO-8859-1");
+            write(msg, response.getOutputStream());
+            return;
+        }
+
         int processingTimeMs = calculateProcessingTime(minMs, maxMs);
 
         LOG.debug("Start blocking request, processing time: {} ms (" + minMs + " - " + maxMs + ").", processingTimeMs);
@@ -45,7 +57,6 @@ abstract public class AsynchTestBase extends EmbeddedHttpServerTestBase {
     }
 
     private int calculateProcessingTime(int minMs, int maxMs) {
-        if (maxMs < minMs) maxMs = minMs;
         int processingTimeMs = minMs + (int) (Math.random() * (maxMs - minMs));
         return processingTimeMs;
     }

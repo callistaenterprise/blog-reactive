@@ -17,6 +17,9 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAw
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 import se.callista.springmvc.asynch.config.MyEmbeddedServletContainerCustomizer;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 @ComponentScan()
 @EnableAutoConfiguration
 public class Application {
@@ -48,10 +51,19 @@ public class Application {
         return tpte;
     }
 
+    @Value("${sp.connectionTimeoutMs}")
+    private int spConnectionTimeoutMs;
+
+    @Value("${sp.requestTimeoutMs}")
+    private int spRequestTimeoutMs;
+
+    @Value("${sp.maxRequestRetry}")
+    private int spMaxRequestRetry;
+
     @Bean
     public AsyncHttpClientLambdaAware getAsyncHttpClient() {
-        LOG.info("### Creates a new AsyncHttpClientLambdaAware-object");
-        return new AsyncHttpClientLambdaAware();
+        LOG.debug("Creates a new AsyncHttpClientLambdaAware-object: with: connection-timeout: {} ms, read-timeout: {} ms\", serviceProviderConnectionTimeoutMs, serviceProviderReadTimeoutMs);");
+        return new AsyncHttpClientLambdaAware(spConnectionTimeoutMs, spRequestTimeoutMs, spMaxRequestRetry);
     }
 
     @Bean
@@ -76,6 +88,11 @@ public class Application {
     public ActorSystem getActorSystem() {
         LOG.info("### Creates a new Akka actor system");
         return ActorSystem.create("actorSystem");
+    }
+
+    @Bean(name="timerService")
+    public ScheduledExecutorService getTimerService() {
+        return Executors.newSingleThreadScheduledExecutor();
     }
 
     public static void main(String[] args) {

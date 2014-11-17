@@ -61,9 +61,9 @@ public class AggregatorControllerTest extends AsynchTestBase {
     }
 
     @Test
-    public void testAggregatorNonBlockingLambda() throws Exception {
+    public void testAggregatorNonBlockingCallback() throws Exception {
 
-        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-lambda?minMs=2000&maxMs=2000"))
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-callback?minMs=2000&maxMs=2000&dbHits=3"))
                 .andExpect(request().asyncStarted())
                 .andReturn();
 
@@ -121,13 +121,34 @@ public class AggregatorControllerTest extends AsynchTestBase {
     }
 
     @Test
-    public void testAggregatorNonBlockingLambdaTimeout() throws Exception {
+    public void testAggregatorNonBlockingCallbackInvalidInput() throws Exception {
+
+        String expectedErrorResultSingle = "Error: maxMs < minMs  (100 < 200)";
+        String expectedErrorResult =
+            expectedErrorResultSingle + '\n' +
+            expectedErrorResultSingle + '\n' +
+            expectedErrorResultSingle + '\n';
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-callback?minMs=200&maxMs=100"))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
+            .andExpect(content().string(expectedErrorResult));
+    }
+
+    @Test
+    public void testAggregatorNonBlockingCallbackTimeout() throws Exception {
 
         int minMs = (TIMEOUT_MS < 1000) ? 0 : TIMEOUT_MS - 1000;
         int maxMs = TIMEOUT_MS + 1000;
         int dbHits = 10;
 
-        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-lambda?dbHits=" + dbHits + "&minMs=" + minMs + "&maxMs=" + maxMs))
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-callback?dbHits=" + dbHits + "&minMs=" + minMs + "&maxMs=" + maxMs))
                 .andExpect(request().asyncStarted())
                 .andReturn();
 

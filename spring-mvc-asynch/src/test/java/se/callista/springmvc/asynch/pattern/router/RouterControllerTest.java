@@ -15,10 +15,10 @@ import org.springframework.web.context.WebApplicationContext;
 import se.callista.springmvc.asynch.Application;
 import se.callista.springmvc.asynch.common.AsynchTestBase;
 
+import static javax.servlet.http.HttpServletResponse.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 
 /**
  * Created by magnus on 29/05/14.
@@ -46,24 +46,42 @@ public class RouterControllerTest extends AsynchTestBase {
     }
 
     @Test
-    public void testRouterNonBlockingLambda() throws Exception {
+    public void testRouterNonBlockingCallback() throws Exception {
 
-        String url = "/router-non-blocking-lambda?minMs=2000&maxMs=2000";
-        testNonBlocking(url);
+        String url = "/router-non-blocking-callback?minMs=2000&maxMs=2000";
+        testNonBlocking(url, SC_OK, expectedResult);
     }
 
-    private void testNonBlocking(String url) throws Exception {
-        MvcResult mvcResult = this.mockMvc.perform(get(url))
-                .andExpect(request().asyncStarted())
-                .andReturn();
+    @Test
+    public void testRouterNonBlockingCallbackInvalidInput() throws Exception {
+
+        String url = "/router-non-blocking-callback?minMs=2000&maxMs=200";
+        testNonBlocking(url, SC_INTERNAL_SERVER_ERROR, "Error: maxMs < minMs  (200 < 2000)");
+    }
+
+    @Test
+    public void testRouterNonBlockingCallbackTimeout() throws Exception {
+
+        String url = "/router-non-blocking-callback?minMs=10000&maxMs=10000";
+        testNonBlocking(url, SC_GATEWAY_TIMEOUT, "Request failed due to service provider not responding within 5000 ms. Url: http://localhost:9090/process-non-blocking?minMs=10000&maxMs=10000");
+    }
+
+    private void testNonBlocking(String url, int expectedHttpStatus, String expectedContent) throws Exception {
+        testNonBlocking(url, "*/*", expectedHttpStatus, expectedContent);
+    }
+
+    private void testNonBlocking(String url, String accept, int expectedHttpStatus, String expectedContent) throws Exception {
+
+        MvcResult mvcResult = this.mockMvc.perform(get(url).header("Accept", accept))
+            .andExpect(request().asyncStarted())
+            .andReturn();
 
         mvcResult.getAsyncResult();
 
+        String expectedContentType = (accept.equals("*/*")) ? "text/plain;charset=ISO-8859-1" : accept;
         this.mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
-                .andExpect(content().string(expectedResult));
+            .andExpect(status().is(expectedHttpStatus))
+            .andExpect(content().contentType(expectedContentType))
+            .andExpect(content().string(expectedContent));
     }
-
-
 }
