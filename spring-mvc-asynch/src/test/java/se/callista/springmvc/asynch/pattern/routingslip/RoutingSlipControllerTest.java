@@ -52,9 +52,15 @@ public class RoutingSlipControllerTest extends AsynchTestBase {
     }
 
     @Test
-    public void testRoutingSlipNonBlockingLambda() throws Exception {
+    public void testRoutingSlipNonBlockingCallback() throws Exception {
 
-        MvcResult mvcResult = this.mockMvc.perform(get("/routing-slip-non-blocking-lambda"))
+         String expectedResult =
+            "{\"status\":\"Ok\",\"processingTimeMs\":100}\n" +
+            "{\"status\":\"Ok\",\"processingTimeMs\":200}\n" +
+            "{\"status\":\"Ok\",\"processingTimeMs\":400}\n" +
+            "{\"status\":\"Ok\",\"processingTimeMs\":500}\n";
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/routing-slip-non-blocking-callback"))
                 .andExpect(request().asyncStarted())
                 .andReturn();
 

@@ -1,9 +1,8 @@
 package se.callista.springmvc.asynch.common.lambdasupport;
 
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.ListenableFuture;
-import com.ning.http.client.Response;
+import com.ning.http.client.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 
@@ -12,31 +11,69 @@ import java.io.IOException;
  */
 public class AsyncHttpClientLambdaAware {
 
-    private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+    private final AsyncHttpClient asyncHttpClient;
 
-    public ListenableFuture<Response> execute(String url, final Completed c, final Error e) throws IOException {
-        return asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
+    public static ResponseEntity<String> createResponseEntity(Response response) {
+        try {
+            return new ResponseEntity<String>(response.getResponseBody(), HttpStatus.valueOf(response.getStatusCode()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            @Override
-            public Response onCompleted(Response response) throws Exception {
-                return c.onCompleted(response);
-            }
+    public AsyncHttpClientLambdaAware(int connectionTimeoutMs, int requestTimeoutMs, int maxRequestRetry) {
 
-            @Override
-            public void onThrowable(Throwable t) {
-                e.onThrowable(t);
-            }
+        AsyncHttpClientConfig config=new AsyncHttpClientConfig.Builder().
+                setConnectionTimeoutInMs(connectionTimeoutMs).
+                setRequestTimeoutInMs(requestTimeoutMs).
+                setMaxRequestRetry(maxRequestRetry).
+                build();
 
-        });
-    };
+        asyncHttpClient = new AsyncHttpClient(config);
+    }
 
-    public ListenableFuture<Response> execute(String url, final Completed c) throws IOException {
-        return asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
+    public ListenableFuture<Response> execute(String url, final Completed c, final Error e) {
+        return execute(url, "*/*", c, e);
+    }
 
-            @Override
-            public Response onCompleted(Response response) throws Exception {
-                return c.onCompleted(response);
-            }
-        });
-    };
+    public ListenableFuture<Response> execute(String url, String acceptHeader, final Completed c, final Error e) {
+
+        try {
+            return asyncHttpClient.prepareGet(url).addHeader("Accept", acceptHeader).execute(new AsyncCompletionHandler<Response>() {
+
+                @Override
+                public Response onCompleted(Response response) throws Exception {
+                    c.onCompleted(response);
+                    return response;
+                }
+
+                @Override
+                public void onThrowable(Throwable t) {
+                    e.onThrowable(t);
+                }
+
+            });
+
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    public ListenableFuture<Response> execute(String url, final Completed c) {
+
+        try {
+            return asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
+
+                @Override
+                public Response onCompleted(Response response) throws Exception {
+                    c.onCompleted(response);
+                    return response;
+                }
+            });
+
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
 }
