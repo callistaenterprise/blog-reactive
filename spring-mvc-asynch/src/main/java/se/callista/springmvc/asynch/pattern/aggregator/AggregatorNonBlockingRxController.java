@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 /**
  * @author Pär Wenåker <par.wenaker@callistaenterprise.se>
@@ -87,7 +86,7 @@ public class AggregatorNonBlockingRxController {
         DeferredResult<String> deferredResult = new DeferredResult<>();
 
         Subscription subscription =
-                Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
+            Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
                 .scan(new Result(), (result, url) -> new Result(result.id + 1, url))
                 .filter(result -> result.id > 0)
@@ -124,8 +123,8 @@ public class AggregatorNonBlockingRxController {
 
     private String getTotalResult(List<Optional<String>> resultArr) {
         String totalResult = "";
-        for (String r : resultArr.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList()))
-            totalResult += r + '\n';
+        for (Optional<String> r : resultArr)
+            totalResult += r.map(v -> v + '\n').orElse("");
         return totalResult;
     }
 
