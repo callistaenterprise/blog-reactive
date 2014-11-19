@@ -18,7 +18,10 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * @author Pär Wenåker <par.wenaker@callistaenterprise.se>
@@ -40,6 +43,26 @@ public class AggregatorNonBlockingRxController {
 
     @Autowired
     private AsyncHttpClientRx asyncHttpClientRx;
+
+    private class Result {
+        private String url = "";
+        private int id;
+
+        Result() {}
+
+        Result(int id, String url) {
+            this.id = id;
+            this.url = url;
+        }
+
+        @Override
+        public String toString() {
+            return "Result{" +
+                    "url='" + url + '\'' +
+                    ", index=" + id +
+                    '}';
+        }
+    }
 
     /**
      * Sample usage: curl "http://localhost:9080/aggregate-non-blocking-rx?minMs=1000&maxMs=2000"
@@ -66,16 +89,20 @@ public class AggregatorNonBlockingRxController {
         Subscription subscription =
                 Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
-                .flatMap(u ->
+                .scan(new Result(), (result, url) -> new Result(result.id + 1, url))
+                .filter(result -> result.id > 0)
+                .flatMap(result ->
                     asyncHttpClientRx
-                        .observable(u)
+                        .observable(result.url)
                         .map(this::getResponseBody)
-                        .onErrorReturn(t -> "error")
+                        .map(Optional::of)
+                        .timeout(TIMEOUT_MS, TimeUnit.MILLISECONDS, Observable.empty())
+                        .onErrorReturn(t -> handleException(t, result))
                 )
                 .doOnNext(this::logThread)
                 .observeOn(Schedulers.computation())
                 .doOnNext(this::logThread)
-                .buffer(TIMEOUT_MS, TimeUnit.MILLISECONDS, dbHits)
+                .buffer(dbHits)
                 .subscribe(v -> deferredResult.setResult(getTotalResult(v)));
 
         deferredResult.onCompletion(subscription::unsubscribe);
@@ -83,7 +110,7 @@ public class AggregatorNonBlockingRxController {
         return deferredResult;
     }
 
-    private void logThread(String r) {
+    private void logThread(Optional<String> r) {
         LOG.debug("Thread:[" + Thread.currentThread().getName()+"] : " + r);
     }
 
@@ -95,11 +122,22 @@ public class AggregatorNonBlockingRxController {
         }
     }
 
-    private String getTotalResult(List<String> resultArr) {
+    private String getTotalResult(List<Optional<String>> resultArr) {
         String totalResult = "";
-        for (String r : resultArr)
+        for (String r : resultArr.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList()))
             totalResult += r + '\n';
         return totalResult;
     }
 
+    private Optional<String> handleException(Throwable throwable, Result result) {
+        String msg;
+        if (throwable instanceof TimeoutException) {
+           msg = "Request #" + throwable + " failed due to service provider not responding within the configured timeout. Url: " + result.url;
+           LOG.error(msg);
+        } else {
+           msg = "Request #" + result.id + " failed due to error: " + throwable;
+           LOG.error(msg, throwable);
+        }
+        return Optional.ofNullable(msg);
+     }
 }
