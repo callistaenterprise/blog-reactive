@@ -1,6 +1,8 @@
 package se.callista.springmvc.asynch.pattern.aggregator;
 
 import com.ning.http.client.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 @RestController
 public class AggregatorNonBlockingRxController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AggregatorNonBlockingRxController.class);
+
     @Value("${sp.non_blocking.url}")
     private String SP_NON_BLOCKING_URL;
 
@@ -40,11 +44,13 @@ public class AggregatorNonBlockingRxController {
     /**
      * Sample usage: curl "http://localhost:9080/aggregate-non-blocking-rx?minMs=1000&maxMs=2000"
      *
-     * @param dbLookupMs
-     * @param dbHits
-     * @param minMs
-     * @param maxMs
-     * @return
+     * @param dbLookupMs time for db lookup
+     * @param dbHits number of results from db
+     * @param minMs min execution time of remote
+     * @param maxMs max execution time of remote
+     *
+     * @return deferred result
+     *
      * @throws java.io.IOException
      */
     @RequestMapping("/aggregate-non-blocking-rx")
@@ -57,19 +63,18 @@ public class AggregatorNonBlockingRxController {
         DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
         DeferredResult<String> deferredResult = new DeferredResult<>();
 
-        String url = SP_NON_BLOCKING_URL + "?minMs=" + minMs + "&maxMs=" + maxMs;
-
         Subscription subscription =
-                Observable.<Integer>create(s ->
-                        s.onNext(dbLookup.executeDbLookup())
-                )
+                Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
-                .flatMap(noOfCalls -> Observable.just(url).repeat(noOfCalls))
                 .flatMap(u ->
-                        asyncHttpClientRx.observable(u)
-                                .map(this::getResponseBody)
-                                .onErrorReturn(t -> "error")
+                    asyncHttpClientRx
+                        .observable(u)
+                        .map(this::getResponseBody)
+                        .onErrorReturn(t -> "error")
                 )
+                .doOnNext(r -> LOG.debug("Thread:[" + Thread.currentThread().getName()+"]"))
+                .observeOn(Schedulers.computation())
+                .doOnNext(r -> LOG.debug("Thread:[" + Thread.currentThread().getName()+"]"))
                 .buffer(TIMEOUT_MS, TimeUnit.MILLISECONDS, dbHits)
                 .subscribe(v -> deferredResult.setResult(getTotalResult(v)));
 

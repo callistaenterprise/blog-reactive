@@ -168,11 +168,32 @@ public class AggregatorControllerTest extends AsynchTestBase {
 
         LOG.debug("assert that no response time was over the timeout: {}", TIMEOUT_MS);
         ObjectMapper mapper = new ObjectMapper();
-        for (int i = 0; i < psArr.length; i++) {
-            ProcessingStatus ps = mapper.readValue(psArr[i], ProcessingStatus.class);
+        for (String aPsArr : psArr) {
+            ProcessingStatus ps = mapper.readValue(aPsArr, ProcessingStatus.class);
             LOG.debug("psArr: {} - {}", ps.getStatus(), ps.getProcessingTimeMs());
             assertTrue(ps.getProcessingTimeMs() < TIMEOUT_MS);
         }
+    }
+
+    @Test
+    public void testAggregatorNonBlockingRxInvalidInput() throws Exception {
+
+        String expectedErrorResultSingle = "Error: maxMs < minMs  (100 < 200)";
+        String expectedErrorResult =
+            expectedErrorResultSingle + '\n' +
+            expectedErrorResultSingle + '\n' +
+            expectedErrorResultSingle + '\n';
+
+        MvcResult mvcResult = this.mockMvc.perform(get("/aggregate-non-blocking-rx?minMs=200&maxMs=100"))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
+            .andExpect(content().string(expectedErrorResult));
     }
 
     @Test
@@ -202,8 +223,8 @@ public class AggregatorControllerTest extends AsynchTestBase {
 
         LOG.debug("assert that no response time was over the timeout: {}", TIMEOUT_MS);
         ObjectMapper mapper = new ObjectMapper();
-        for (int i = 0; i < psArr.length; i++) {
-            ProcessingStatus ps = mapper.readValue(psArr[i], ProcessingStatus.class);
+        for (String aPsArr : psArr) {
+            ProcessingStatus ps = mapper.readValue(aPsArr, ProcessingStatus.class);
             LOG.debug("psArr: {} - {}", ps.getStatus(), ps.getProcessingTimeMs());
             assertTrue(ps.getProcessingTimeMs() < TIMEOUT_MS);
         }
@@ -236,8 +257,8 @@ public class AggregatorControllerTest extends AsynchTestBase {
 
         LOG.debug("assert that no response time was over the timeout: {}", TIMEOUT_MS);
         ObjectMapper mapper = new ObjectMapper();
-        for (int i = 0; i < psArr.length; i++) {
-            ProcessingStatus ps = mapper.readValue(psArr[i], ProcessingStatus.class);
+        for (String aPsArr : psArr) {
+            ProcessingStatus ps = mapper.readValue(aPsArr, ProcessingStatus.class);
             LOG.debug("psArr: {} - {}", ps.getStatus(), ps.getProcessingTimeMs());
             assertTrue(ps.getProcessingTimeMs() < TIMEOUT_MS);
         }

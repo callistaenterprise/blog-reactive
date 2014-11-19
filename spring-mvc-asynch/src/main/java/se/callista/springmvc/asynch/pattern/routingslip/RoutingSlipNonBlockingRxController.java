@@ -15,7 +15,6 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 @RestController
 public class RoutingSlipNonBlockingRxController {
@@ -28,39 +27,57 @@ public class RoutingSlipNonBlockingRxController {
     @Autowired
     AsyncHttpClientRx asyncHttpClientRx;
 
+    private class Result {
+        private final List<String> resultList = new ArrayList<>();
+        private boolean lastCallStatus = true;
+
+        private Result processResult(String result) {
+            resultList.add(result);
+            lastCallStatus = true;
+            return this;
+        }
+
+        private String getTotalResult() {
+            String totalResult = "";
+            for (String r : resultList)
+                totalResult += r + '\n';
+            return totalResult;
+        }
+    }
+
     /**
      * Sample usage: curl "http://localhost:9080/routing-slip-non-blocking-rx"
      *
-     * @return
+     * @return a deferred result
      */
     @RequestMapping("/routing-slip-non-blocking-rx")
     public DeferredResult<String> nonBlockingRoutingSlip() throws IOException {
 
         final DeferredResult<String> deferredResult = new DeferredResult<>();
 
-        Subscription subscription = Observable.<List<String>>just(new ArrayList<>())
-                .flatMap(result -> doAsyncCall(result, 1, this::processResult))
-                .flatMap(result -> doAsyncCall(result, 2, this::processResult))
-                .flatMap(result -> doAsyncCall(result, 3, this::processResult))
-                .flatMap(result -> doAsyncCall(result, 4, this::processResult))
-                .flatMap(result -> doAsyncCall(result, 5, this::processResult))
-                .subscribe(v -> deferredResult.setResult(getTotalResult(v)));
+        Subscription subscription = Observable.just(new Result())
+                .flatMap(result -> doAsyncCall(result, 1))
+                .flatMap(result -> doAsyncCall(result, 2))
+                .flatMap(result ->
+                    result.lastCallStatus ?
+                        doAsyncCall(result, 4) :
+                        doAsyncCall(result, 3)
+                )
+                .flatMap(result -> doAsyncCall(result, 5))
+                .subscribe(result -> deferredResult.setResult(result.getTotalResult()));
 
         deferredResult.onCompletion(subscription::unsubscribe);
 
         return deferredResult;
     }
 
-    private Observable<List<String>> doAsyncCall(List<String> result, int num, Function<String, String> processor) {
+    private Observable<Result> doAsyncCall(Result result, int num) {
         LOG.debug("Start req #{}", num);
         return asyncHttpClientRx
                 .observable(getUrl(num))
                 .doOnNext(r -> LOG.debug("Got resp #{}", num))
                 .map(this::getResponseBody)
-                .map(response -> {
-                    result.add(processor.apply(response));
-                    return result;
-                });
+                .map(result::processResult);
     }
 
     private String getResponseBody(Response response) {
@@ -76,15 +93,5 @@ public class RoutingSlipNonBlockingRxController {
         return SP_NON_BLOCKING_URL + "?minMs=" + sleeptimeMs + "&maxMs=" + sleeptimeMs;
     }
 
-    private String processResult(String result) {
-        return result;
-    }
-
-    private String getTotalResult(List<String> resultList) {
-        String totalResult = "";
-        for (String r : resultList)
-            totalResult += r + '\n';
-        return totalResult;
-    }
 
 }
