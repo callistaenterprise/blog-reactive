@@ -1,6 +1,7 @@
 package se.callista.springmvc.asynch.common.lambdasupport;
 
 import com.ning.http.client.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -11,25 +12,16 @@ import java.io.IOException;
  */
 public class AsyncHttpClientLambdaAware {
 
-    private final AsyncHttpClient asyncHttpClient;
+    @Autowired
+    @SuppressWarnings("SpringJavaAutowiredMembersInspection")
+    private AsyncHttpClient asyncHttpClient;
 
     public static ResponseEntity<String> createResponseEntity(Response response) {
         try {
-            return new ResponseEntity<String>(response.getResponseBody(), HttpStatus.valueOf(response.getStatusCode()));
+            return new ResponseEntity<>(response.getResponseBody(), HttpStatus.valueOf(response.getStatusCode()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public AsyncHttpClientLambdaAware(int connectionTimeoutMs, int requestTimeoutMs, int maxRequestRetry) {
-
-        AsyncHttpClientConfig config=new AsyncHttpClientConfig.Builder().
-                setConnectionTimeoutInMs(connectionTimeoutMs).
-                setRequestTimeoutInMs(requestTimeoutMs).
-                setMaxRequestRetry(maxRequestRetry).
-                build();
-
-        asyncHttpClient = new AsyncHttpClient(config);
     }
 
     public ListenableFuture<Response> execute(String url, final Completed c, final Error e) {

@@ -1,6 +1,8 @@
 package se.callista.springmvc.asynch;
 
 import akka.actor.ActorSystem;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,9 +63,20 @@ public class Application {
     private int spMaxRequestRetry;
 
     @Bean
-    public AsyncHttpClientLambdaAware getAsyncHttpClient() {
+    public AsyncHttpClient getAsyncHttpClient() {
+        AsyncHttpClientConfig config = new AsyncHttpClientConfig.Builder().
+                 setConnectionTimeoutInMs(spConnectionTimeoutMs).
+                 setRequestTimeoutInMs(spRequestTimeoutMs).
+                 setMaxRequestRetry(spMaxRequestRetry).
+                 build();
+
+        return new AsyncHttpClient(config);
+    }
+
+    @Bean
+    public AsyncHttpClientLambdaAware getAsyncHttpClientCallback() {
         LOG.debug("Creates a new AsyncHttpClientLambdaAware-object: with: connection-timeout: {} ms, read-timeout: {} ms\", serviceProviderConnectionTimeoutMs, serviceProviderReadTimeoutMs);");
-        return new AsyncHttpClientLambdaAware(spConnectionTimeoutMs, spRequestTimeoutMs, spMaxRequestRetry);
+        return new AsyncHttpClientLambdaAware();
     }
 
     @Bean

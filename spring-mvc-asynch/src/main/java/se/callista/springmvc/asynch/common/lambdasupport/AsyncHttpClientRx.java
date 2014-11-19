@@ -3,6 +3,7 @@ package se.callista.springmvc.asynch.common.lambdasupport;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import rx.Observable;
 
 /**
@@ -10,7 +11,9 @@ import rx.Observable;
  */
 public class AsyncHttpClientRx {
 
-    private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+    @Autowired
+    @SuppressWarnings("SpringJavaAutowiredMembersInspection")
+    private AsyncHttpClient asyncHttpClient;
 
     public Observable<Response> observable(String url) {
         return Observable.create(subscriber -> {

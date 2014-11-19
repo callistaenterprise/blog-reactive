@@ -72,15 +72,19 @@ public class AggregatorNonBlockingRxController {
                         .map(this::getResponseBody)
                         .onErrorReturn(t -> "error")
                 )
-                .doOnNext(r -> LOG.debug("Thread:[" + Thread.currentThread().getName()+"]"))
+                .doOnNext(this::logThread)
                 .observeOn(Schedulers.computation())
-                .doOnNext(r -> LOG.debug("Thread:[" + Thread.currentThread().getName()+"]"))
+                .doOnNext(this::logThread)
                 .buffer(TIMEOUT_MS, TimeUnit.MILLISECONDS, dbHits)
                 .subscribe(v -> deferredResult.setResult(getTotalResult(v)));
 
         deferredResult.onCompletion(subscription::unsubscribe);
 
         return deferredResult;
+    }
+
+    private void logThread(String r) {
+        LOG.debug("Thread:[" + Thread.currentThread().getName()+"] : " + r);
     }
 
     private String getResponseBody(Response response) {
