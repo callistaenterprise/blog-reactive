@@ -12,7 +12,7 @@ import se.callista.springmvc.asynch.commons.lambdasupport.AsyncHttpClientScala
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{firstCompletedOf, sequence}
 import scala.concurrent.{Future, TimeoutException, _}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 @RestController
@@ -38,17 +38,20 @@ class AggregatorNonBlockingScalaController {
 	private lazy val timeoutScheduler = Executors.newSingleThreadScheduledExecutor
 
 	@RequestMapping(Array("/aggregate-non-blocking-scala"))
-	def nonBlockingAggregator (@RequestParam(value = "dbLookupMs", required = false, defaultValue = "0") dbLookupMs: Int,
-	                           @RequestParam(value = "dbHits", required = false, defaultValue = "3") dbHits: Int,
-	                           @RequestParam(value = "minMs", required = false, defaultValue = "0") minMs: Int,
-	                           @RequestParam(value = "maxMs", required = false, defaultValue = "0") maxMs: Int): DeferredResult[String] = {
+	def nonBlockingAggregator(@RequestParam(value = "dbLookupMs", required = false, defaultValue = "0") dbLookupMs: Int,
+	                          @RequestParam(value = "dbHits", required = false, defaultValue = "3") dbHits: Int,
+	                          @RequestParam(value = "minMs", required = false, defaultValue = "0") minMs: Int,
+	                          @RequestParam(value = "maxMs", required = false, defaultValue = "0") maxMs: Int): DeferredResult[String] = {
 
 		val deferredResult = new DeferredResult[String]
 
 		doDbLookup(dbLookupMs, dbHits, minMs, maxMs)
-				.flatMap(urls => sequence(urls.map(url => firstCompletedOf(asyncCall(url)::timeoutFuture::Nil))))
+				.flatMap(urls => sequence(urls.map(url => firstCompletedOf(asyncCall(url) :: timeoutFuture :: Nil))))
 				.map(results => results.filterNot(result => result.isInstanceOf[Throwable]))
-				.map(results => deferredResult.setResult(results.mkString("\n")))
+				.andThen {
+					case Success(results) => deferredResult.setResult(results.mkString("\n"))
+					case Failure(t) => deferredResult.setErrorResult(t)
+				}
 
 		deferredResult
 	}
