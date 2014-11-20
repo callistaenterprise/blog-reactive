@@ -64,7 +64,10 @@ public class RoutingSlipNonBlockingRxController {
                         doAsyncCall(result, 3)
                 )
                 .flatMap(result -> doAsyncCall(result, 5))
-                .subscribe(result -> deferredResult.setResult(result.getTotalResult()));
+                .subscribe(
+                        result -> deferredResult.setResult(result.getTotalResult()),
+                        deferredResult::setErrorResult
+                );
 
         deferredResult.onCompletion(subscription::unsubscribe);
 

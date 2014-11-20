@@ -16,24 +16,24 @@ public class AsyncHttpClientRx {
     private AsyncHttpClient asyncHttpClient;
 
     public Observable<Response> observable(String url) {
-        return Observable.create(subscriber -> {
+        return Observable.create(observer -> {
 
             try {
                 asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
                     @Override
                     public Response onCompleted(Response response) throws Exception {
-                        subscriber.onNext(response);
-                        subscriber.onCompleted();
+                        observer.onNext(response);
+                        observer.onCompleted();
                         return response;
                     }
 
                     @Override
                     public void onThrowable(Throwable t) {
-                        subscriber.onError(t);
+                        observer.onError(t);
                     }
                 });
             } catch (Exception e) {
-                subscriber.onError(e);
+                observer.onError(e);
             }
         });
     }

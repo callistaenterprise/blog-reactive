@@ -18,7 +18,6 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -43,13 +42,13 @@ public class AggregatorNonBlockingRxController {
     @Autowired
     private AsyncHttpClientRx asyncHttpClientRx;
 
-    private class Result {
+    private class Request {
         private String url = "";
         private int id;
 
-        Result() {}
+        Request() {}
 
-        Result(int id, String url) {
+        Request(int id, String url) {
             this.id = id;
             this.url = url;
         }
@@ -88,15 +87,14 @@ public class AggregatorNonBlockingRxController {
         Subscription subscription =
             Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
-                .scan(new Result(), (result, url) -> new Result(result.id + 1, url))
-                .filter(result -> result.id > 0)
-                .flatMap(result ->
+                .scan(new Request(), (request, url) -> new Request(request.id + 1, url))
+                .filter(request -> request.id > 0)
+                .flatMap(request ->
                     asyncHttpClientRx
-                        .observable(result.url)
+                        .observable(request.url)
                         .map(this::getResponseBody)
-                        .map(Optional::of)
                         .timeout(TIMEOUT_MS, TimeUnit.MILLISECONDS, Observable.empty())
-                        .onErrorReturn(t -> handleException(t, result))
+                        .onErrorReturn(t -> handleException(t, request))
                 )
                 .doOnNext(this::logThread)
                 .observeOn(Schedulers.computation())
@@ -109,7 +107,7 @@ public class AggregatorNonBlockingRxController {
         return deferredResult;
     }
 
-    private void logThread(Optional<String> r) {
+    private void logThread(String r) {
         LOG.debug("Thread:[" + Thread.currentThread().getName()+"] : " + r);
     }
 
@@ -121,22 +119,22 @@ public class AggregatorNonBlockingRxController {
         }
     }
 
-    private String getTotalResult(List<Optional<String>> resultArr) {
+    private String getTotalResult(List<String> resultArr) {
         String totalResult = "";
-        for (Optional<String> r : resultArr)
-            totalResult += r.map(v -> v + '\n').orElse("");
+        for (String r : resultArr)
+            totalResult += r + '\n';
         return totalResult;
     }
 
-    private Optional<String> handleException(Throwable throwable, Result result) {
+    private String handleException(Throwable throwable, Request request) {
         String msg;
         if (throwable instanceof TimeoutException) {
-           msg = "Request #" + throwable + " failed due to service provider not responding within the configured timeout. Url: " + result.url;
+           msg = "Request #" + throwable + " failed due to service provider not responding within the configured timeout. Url: " + request.url;
            LOG.error(msg);
         } else {
-           msg = "Request #" + result.id + " failed due to error: " + throwable;
+           msg = "Request #" + request.id + " failed due to error: " + throwable;
            LOG.error(msg, throwable);
         }
-        return Optional.ofNullable(msg);
+        return msg;
      }
 }
