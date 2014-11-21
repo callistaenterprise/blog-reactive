@@ -4,6 +4,7 @@ import akka.dispatch.Futures;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
 
@@ -12,7 +13,9 @@ import scala.concurrent.Promise;
  */
 public class AsyncHttpClientAkka {
 
-    private static final AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
+    @Autowired
+    @SuppressWarnings("SpringJavaAutowiredMembersInspection")
+    private AsyncHttpClient asyncHttpClient;
 
     public Future<Response> execute(String url) {
         Promise<Response> promise = Futures.promise();

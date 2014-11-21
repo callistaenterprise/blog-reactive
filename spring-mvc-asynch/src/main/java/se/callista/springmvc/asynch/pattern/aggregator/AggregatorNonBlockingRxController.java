@@ -1,6 +1,8 @@
 package se.callista.springmvc.asynch.pattern.aggregator;
 
 import com.ning.http.client.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,12 +19,15 @@ import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Pär Wenåker <par.wenaker@callistaenterprise.se>
  */
 @RestController
 public class AggregatorNonBlockingRxController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AggregatorNonBlockingRxController.class);
 
     @Value("${sp.non_blocking.url}")
     private String SP_NON_BLOCKING_URL;
@@ -37,14 +42,36 @@ public class AggregatorNonBlockingRxController {
     @Autowired
     private AsyncHttpClientRx asyncHttpClientRx;
 
+    private class Request {
+        private String url = "";
+        private int id;
+
+        Request() {}
+
+        Request(int id, String url) {
+            this.id = id;
+            this.url = url;
+        }
+
+        @Override
+        public String toString() {
+            return "Result{" +
+                    "url='" + url + '\'' +
+                    ", index=" + id +
+                    '}';
+        }
+    }
+
     /**
      * Sample usage: curl "http://localhost:9080/aggregate-non-blocking-rx?minMs=1000&maxMs=2000"
      *
-     * @param dbLookupMs
-     * @param dbHits
-     * @param minMs
-     * @param maxMs
-     * @return
+     * @param dbLookupMs time for db lookup
+     * @param dbHits number of results from db
+     * @param minMs min execution time of remote
+     * @param maxMs max execution time of remote
+     *
+     * @return deferred result
+     *
      * @throws java.io.IOException
      */
     @RequestMapping("/aggregate-non-blocking-rx")
@@ -57,25 +84,31 @@ public class AggregatorNonBlockingRxController {
         DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
         DeferredResult<String> deferredResult = new DeferredResult<>();
 
-        String url = SP_NON_BLOCKING_URL + "?minMs=" + minMs + "&maxMs=" + maxMs;
-
         Subscription subscription =
-                Observable.<Integer>create(s ->
-                        s.onNext(dbLookup.executeDbLookup())
-                )
+            Observable.from(dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs))
                 .subscribeOn(Schedulers.from(dbThreadPoolExecutor))
-                .flatMap(noOfCalls -> Observable.just(url).repeat(noOfCalls))
-                .flatMap(u ->
-                        asyncHttpClientRx.observable(u)
-                                .map(this::getResponseBody)
-                                .onErrorReturn(t -> "error")
+                .scan(new Request(), (request, url) -> new Request(request.id + 1, url))
+                .filter(request -> request.id > 0)
+                .flatMap(request ->
+                    asyncHttpClientRx
+                        .observable(request.url)
+                        .map(this::getResponseBody)
+                        .timeout(TIMEOUT_MS, TimeUnit.MILLISECONDS, Observable.empty())
+                        .onErrorReturn(t -> handleException(t, request))
                 )
-                .buffer(TIMEOUT_MS, TimeUnit.MILLISECONDS, dbHits)
+                .doOnNext(this::logThread)
+                .observeOn(Schedulers.computation())
+                .doOnNext(this::logThread)
+                .buffer(dbHits)
                 .subscribe(v -> deferredResult.setResult(getTotalResult(v)));
 
         deferredResult.onCompletion(subscription::unsubscribe);
 
         return deferredResult;
+    }
+
+    private void logThread(String r) {
+        LOG.debug("Thread:[" + Thread.currentThread().getName()+"] : " + r);
     }
 
     private String getResponseBody(Response response) {
@@ -93,4 +126,15 @@ public class AggregatorNonBlockingRxController {
         return totalResult;
     }
 
+    private String handleException(Throwable throwable, Request request) {
+        String msg;
+        if (throwable instanceof TimeoutException) {
+           msg = "Request #" + throwable + " failed due to service provider not responding within the configured timeout. Url: " + request.url;
+           LOG.error(msg);
+        } else {
+           msg = "Request #" + request.id + " failed due to error: " + throwable;
+           LOG.error(msg, throwable);
+        }
+        return msg;
+     }
 }

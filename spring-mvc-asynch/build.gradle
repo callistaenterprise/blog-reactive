@@ -5,6 +5,7 @@ buildscript {
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.1.1.RELEASE")
+        classpath("org.zeroturnaround:gradle-jrebel-plugin:1.1.2")
     }
 }
 
@@ -14,7 +15,14 @@ apply plugin: 'idea'
 apply plugin: 'spring-boot'
 apply plugin: 'war'
 
+if (hasProperty('rebel')) {
+    apply plugin: 'rebel'
+    bootRun.dependsOn generateRebel
+    applicationDefaultJvmArgs = ["-javaagent:${System.env.JREBEL_HOME}/jrebel.jar"]
+}
+
 sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 war {
     baseName = 'spring-mvc-asynch'
@@ -33,7 +41,7 @@ dependencies {
 	compile("com.ning:async-http-client:1.8.4")
     compile("javax.xml.bind:jaxb-api:2.1")
     compile("com.sun.xml.bind:jaxb-impl:2.1.9")
-    compile("io.reactivex:rxjava:1.0.0-rc.7")
+    compile("io.reactivex:rxjava:1.0.0")
     compile("com.typesafe.akka:akka-actor_2.11:2.3.6")
     compile 'ch.qos.logback:logback-classic:1.1.2'
     testCompile("org.springframework.boot:spring-boot-starter-test")
@@ -43,5 +51,5 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.11'
+    gradleVersion = '1.12'
 }
