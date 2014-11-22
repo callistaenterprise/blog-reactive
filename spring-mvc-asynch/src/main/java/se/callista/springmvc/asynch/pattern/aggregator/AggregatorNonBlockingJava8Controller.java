@@ -87,7 +87,7 @@ public class AggregatorNonBlockingJava8Controller {
 	private CompletableFuture<Optional<String>> doAsyncCall(String url, int id) {
 		logger.debug("Start asynch call #{}", id);
 		return asyncHttpClientJava8.execute(url, id)
-				.thenApply(response -> Optional.of(extractResponseBody.apply(response)))
+				.thenApply(response -> Optional.of(extractResponseBody(response)))
 				.applyToEither(TimeoutDefault.with(TIMEOUT_MS), identity())
 				.exceptionally(t -> Optional.of("Request #" + id + " failed due to error: " + t.getMessage()));
 	}
@@ -103,13 +103,12 @@ public class AggregatorNonBlockingJava8Controller {
 		deferredResult.setResult(collectedResponse);
 	}
 
-	private Function<Response, String> extractResponseBody =
-			response -> {
-				try {
-					return response.getResponseBody();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			};
+	private String extractResponseBody(Response response) {
+		try {
+			return response.getResponseBody();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 }
