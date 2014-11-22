@@ -18,19 +18,22 @@ public class AsyncHttpClientJava8 {
     @SuppressWarnings("SpringJavaAutowiredMembersInspection")
     private AsyncHttpClient asyncHttpClient;
 
-	public CompletableFuture<Response> execute(String url) {
+	public CompletableFuture<Response> execute(String url, int id) {
         final CompletableFuture<Response> result = new CompletableFuture<>();
-
         try {
             asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
-	            @Override
-	            public Response onCompleted(Response response) throws Exception {
-		            result.complete(response);
+                @Override
+                public Response onCompleted(Response response) throws Exception {
+                    logger.debug("Request #{} completed successfully", id);
+
+//                    result.completeExceptionally(new IOException("Async Exception"));
+                    result.complete(response);
                     return response;
                 }
 
                 @Override
                 public void onThrowable(Throwable t) {
+                    logger.debug("Request #{} failed");
                     result.completeExceptionally(t);
                 }
             });

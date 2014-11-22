@@ -50,7 +50,7 @@ public class RoutingSlipNonBlockingJava8Controller {
     private CompletableFuture<List<String>> doAsyncCall(List<String> result, int num) {
         LOG.debug("Start req #{}", num);
         return asyncHttpClientJava8
-                .execute(getUrl(num))
+                .execute(getUrl(num), num)
                 .thenApply(logResponse(num))
                 .thenApply(getResponseBody()).exceptionally(t -> "error")
                 .thenApply(addBodyToResult(result));

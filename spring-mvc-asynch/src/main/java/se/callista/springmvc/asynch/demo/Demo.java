@@ -12,7 +12,7 @@ public class Demo {
 	private static final Double ABSOLUTE_ZERO = -273.15;
 
 	public CompletableFuture<Double> getTemperature() {
-		CompletableFuture<Response> tempJsonFuture = new AsyncHttpClientJava8().execute(url);
+		CompletableFuture<Response> tempJsonFuture = new AsyncHttpClientJava8().execute(url, 1);
 		return tempJsonFuture
 				.thenApplyAsync(this::extractTemp) //Map
 				.thenComposeAsync(this::kelvinToCelcius); //Flatmap
@@ -36,15 +36,15 @@ public class Demo {
 		}
 	}
 
-	public static void main(String[] args) {
-		new Demo().getTemperature()
-				.whenComplete((temperature, ex) -> {
-					if (ex == null) {
-						System.out.println(temperature.intValue());
-					} else {
-						System.out.println(ex.getMessage());
-					}
-				})
-				.thenAcceptAsync(temperature -> System.exit(0));
-	}
+//	public static void main(String[] args) {
+//		new Demo().getTemperature()
+//				.whenComplete((temperature, ex) -> {
+//					if (ex == null) {
+//						System.out.println(temperature.intValue());
+//					} else {
+//						System.out.println(ex.getMessage());
+//					}
+//				})
+//				.thenAcceptAsync(temperature -> System.exit(0));
+//	}
 }

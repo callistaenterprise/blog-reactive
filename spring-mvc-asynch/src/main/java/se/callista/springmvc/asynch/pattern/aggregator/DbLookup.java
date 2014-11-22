@@ -1,5 +1,8 @@
 package se.callista.springmvc.asynch.pattern.aggregator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +12,7 @@ import java.util.List;
 public class DbLookup {
     private final int dbLookupMs;
     private final int dbHits;
+    private static final Logger logger = LoggerFactory.getLogger(DbLookup.class);
 
     public DbLookup(int dbLookupMs, int dbHits) {
         this.dbLookupMs = dbLookupMs;
@@ -25,7 +29,7 @@ public class DbLookup {
     }
 
     public List<String> lookupUrlsInDb(String baseUrl, int minMs, int maxMs) {
-
+        logger.debug("Lookup Db urls");
         // Start of blocking db-lookup
         List<String> urls = new ArrayList<>();
 

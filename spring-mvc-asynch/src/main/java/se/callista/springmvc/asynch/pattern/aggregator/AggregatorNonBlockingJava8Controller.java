@@ -1,6 +1,8 @@
 package se.callista.springmvc.asynch.pattern.aggregator;
 
 import com.ning.http.client.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,15 +14,16 @@ import org.springframework.web.context.request.async.DeferredResult;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static java.util.function.Function.identity;
+import static se.callista.springmvc.asynch.pattern.aggregator.callbacksupport.FutureSupport.sequence;
 
 @RestController
 public class AggregatorNonBlockingJava8Controller {
@@ -37,6 +40,8 @@ public class AggregatorNonBlockingJava8Controller {
 
 	@Autowired
 	private AsyncHttpClientJava8 asyncHttpClientJava8;
+
+	private static final Logger logger = LoggerFactory.getLogger(AggregatorNonBlockingJava8Controller.class);
 
 	/**
 	 * Sample usage: curl "http://localhost:9080/aggregate-non-blocking-java8?minMs=1000&maxMs=2000"
@@ -55,56 +60,48 @@ public class AggregatorNonBlockingJava8Controller {
 			@RequestParam(value = "minMs", required = false, defaultValue = "0") int minMs,
 			@RequestParam(value = "maxMs", required = false, defaultValue = "0") int maxMs) throws IOException {
 
-		DeferredResult<String> deferredResult = new DeferredResult<>();
+		final DeferredResult<String> deferredResult = new DeferredResult<>();
+		final DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
 
-		dbLookup(dbLookupMs, dbHits, minMs, maxMs)
-				.thenCompose(urls -> executeRemoteHttpRequests(urls))
-				.thenApply(result -> deferredResult.setResult(result
-						.stream()
-							.map(extractResponseBody)
-						.collect(Collectors.joining("\n"))));
+		supplyAsync(() -> dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs), dbThreadPoolExecutor)
+				.thenComposeAsync(this::executeHttpRequests)
+				.whenComplete((result, throwable) -> {
+					if (throwable == null) {
+						populateDeferredResult(deferredResult, result);
+					} else {
+						deferredResult.setErrorResult(throwable);
+					}
+				});
 
 		return deferredResult;
 	}
 
-	public CompletableFuture<List<Response>> executeRemoteHttpRequests(List<String> urls) {
-		return sequence(urls
-						.stream()
-							.map(this::doAsyncCall)
-						.collect(Collectors.toList())
-				)
-				.thenApply(responses -> responses
-						.stream()
-							.filter(Optional::isPresent)
-							.map(Optional::get)
-						.collect(Collectors.toList())
-				);
+
+	private CompletableFuture<List<String>> executeHttpRequests(List<String> urls) {
+		CompletableFuture<List<Optional<String>>> futureResponses =
+				sequence(IntStream.rangeClosed(1, urls.size()).mapToObj(i -> doAsyncCall(urls.get(i - 1), i)).collect(Collectors.toList()));
+
+		return futureResponses.thenApply(this::filterResponses);
 	}
 
-	private CompletableFuture<Optional<Response>> doAsyncCall(String url) {
-		return asyncHttpClientJava8.execute(url)
-				.thenApply(Optional::of)
+	private CompletableFuture<Optional<String>> doAsyncCall(String url, int id) {
+		logger.debug("Start asynch call #{}", id);
+		return asyncHttpClientJava8.execute(url, id)
+				.thenApply(response -> Optional.of(extractResponseBody.apply(response)))
 				.applyToEither(TimeoutDefault.with(TIMEOUT_MS), identity())
-				.exceptionally(t -> Optional.empty());
+				.exceptionally(t -> Optional.of("Request #" + id + " failed due to error: " + t.getMessage()));
 	}
 
-	private static <T> CompletableFuture<List<T>> sequence(List<CompletableFuture<T>> futures) {
-		CompletableFuture<Void> allDoneFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-		return allDoneFuture.thenApply(v ->
-						futures.stream().
-								map(future -> future.join()).
-								collect(Collectors.<T>toList())
-		);
+	private List<String> filterResponses(List<Optional<String>> responses) {
+		return responses.stream()
+				.filter(Optional::isPresent)
+				.map(Optional::get).collect(Collectors.toList());
 	}
 
-	private CompletableFuture<List<String>> dbLookup(int dbLookupMs, int dbHits, int minMs, int maxMs) {
-		final String url = SP_NON_BLOCKING_URL + "?minMs=" + minMs + "&maxMs=" + maxMs;
-		final DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
-
-		return supplyAsync(() -> dbLookup.executeDbLookup(), dbThreadPoolExecutor)
-				.thenApply(noOfCalls -> Collections.nCopies(noOfCalls, url));
+	private void populateDeferredResult(DeferredResult<String> deferredResult, List<String> result) {
+		String collectedResponse = result.stream().collect(Collectors.joining("\n"));
+		deferredResult.setResult(collectedResponse);
 	}
-
 
 	private Function<Response, String> extractResponseBody =
 			response -> {
