@@ -15,6 +15,9 @@ import org.springframework.web.context.WebApplicationContext;
 import se.callista.springmvc.asynch.Application;
 import se.callista.springmvc.asynch.common.AsynchTestBase;
 
+import static javax.servlet.http.HttpServletResponse.SC_GATEWAY_TIMEOUT;
+import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,22 +57,26 @@ public class RoutingSlipControllerTest extends AsynchTestBase {
     @Test
     public void testRoutingSlipNonBlockingCallback() throws Exception {
 
-         String expectedResult =
+        String expectedResult =
             "{\"status\":\"Ok\",\"processingTimeMs\":100}\n" +
             "{\"status\":\"Ok\",\"processingTimeMs\":200}\n" +
             "{\"status\":\"Ok\",\"processingTimeMs\":400}\n" +
             "{\"status\":\"Ok\",\"processingTimeMs\":500}\n";
 
-        MvcResult mvcResult = this.mockMvc.perform(get("/routing-slip-non-blocking-callback"))
-                .andExpect(request().asyncStarted())
-                .andReturn();
+        String url = "/routing-slip-non-blocking-callback";
+        testNonBlocking(url, SC_OK, expectedResult);
+    }
 
-        mvcResult.getAsyncResult();
+    @Test
+    public void testRoutingSlipNonBlockingCallbackInvalidInput() throws Exception {
+        String url = "/routing-slip-non-blocking-callback?qry=error";
+        testNonBlocking(url, SC_INTERNAL_SERVER_ERROR, "Error: Invalid query parameter, qry=error");
+    }
 
-        this.mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"))
-                .andExpect(content().string(expectedResult));
+    @Test
+    public void testRoutingSlipNonBlockingCallbackTimeout() throws Exception {
+        String url = "/routing-slip-non-blocking-callback?qry=timeout";
+        testNonBlocking(url, SC_GATEWAY_TIMEOUT, "Request failed due to service provider not responding within 5000 ms. Url: http://localhost:9090/process-non-blocking?minMs=100&maxMs=100&qry=timeout");
     }
 
     @Test

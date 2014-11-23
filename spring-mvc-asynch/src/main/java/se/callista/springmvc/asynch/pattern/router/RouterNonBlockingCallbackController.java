@@ -51,13 +51,13 @@ public class RouterNonBlockingCallbackController {
         LOG.debug("Start call...");
         asyncHttpClient.execute(url, accept,
 
-                (response) -> {
-                    LOG.debug("Got a response, setting the result on the deferred result!");
-                    deferredResult.setResult(createResponseEntity(response));
-                },
-
                 (throwable) -> {
                     handleException(throwable, url, deferredResult);
+                },
+
+                (response) -> {
+                    LOG.debug("Got a response ({}), setting the result on the deferred result!", response.getStatusCode());
+                    deferredResult.setResult(createResponseEntity(response));
                 }
         );
 

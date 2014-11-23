@@ -76,13 +76,13 @@ public class Executor {
                 LOG.debug("Start asynch call #{}", id);
                 concurrentRequests.add(asyncHttpClient.execute(url, accept,
 
+                        (throwable) -> {
+                            handleException(throwable, url, id);
+                        },
+
                         (response) -> {
                             LOG.debug("Received asynch response #{}", id);
                             addResponse(id, response.getResponseBody());
-                        },
-
-                        (throwable) -> {
-                            handleException(throwable, url, id);
                         }
                 ));
             }

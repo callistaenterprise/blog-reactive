@@ -18,17 +18,21 @@ public class AsyncHttpClientLambdaAware {
 
     public static ResponseEntity<String> createResponseEntity(Response response) {
         try {
-            return new ResponseEntity<>(response.getResponseBody(), HttpStatus.valueOf(response.getStatusCode()));
+            return createResponseEntity(response.getResponseBody(), HttpStatus.valueOf(response.getStatusCode()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public ListenableFuture<Response> execute(String url, final Completed c, final Error e) {
-        return execute(url, "*/*", c, e);
+    public static ResponseEntity<String> createResponseEntity(String responseBody, HttpStatus httpStatusCode) {
+        return new ResponseEntity<>(responseBody, httpStatusCode);
     }
 
-    public ListenableFuture<Response> execute(String url, String acceptHeader, final Completed c, final Error e) {
+    public ListenableFuture<Response> execute(String url, final Error e, final Completed c) {
+        return execute(url, "*/*", e, c);
+    }
+
+    public ListenableFuture<Response> execute(String url, String acceptHeader, final Error e, final Completed c) {
 
         try {
             return asyncHttpClient.prepareGet(url).addHeader("Accept", acceptHeader).execute(new AsyncCompletionHandler<Response>() {
@@ -50,22 +54,4 @@ public class AsyncHttpClientLambdaAware {
             throw new RuntimeException(ioe);
         }
     }
-
-    public ListenableFuture<Response> execute(String url, final Completed c) {
-
-        try {
-            return asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler<Response>() {
-
-                @Override
-                public Response onCompleted(Response response) throws Exception {
-                    c.onCompleted(response);
-                    return response;
-                }
-            });
-
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
-    }
-
 }
