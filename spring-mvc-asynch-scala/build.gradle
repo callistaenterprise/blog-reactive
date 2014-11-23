@@ -28,6 +28,7 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.springframework.boot:spring-boot-starter-jetty")
     compile("org.springframework.boot:spring-boot-starter-actuator")
+    compile("org.json4s:json4s-native_2.11:3.2.11")
 	compile("com.ning:async-http-client:1.8.4")
     compile("ch.qos.logback:logback-classic:1.1.2")
     compile("org.scala-lang:scala-library:2.11.2")
