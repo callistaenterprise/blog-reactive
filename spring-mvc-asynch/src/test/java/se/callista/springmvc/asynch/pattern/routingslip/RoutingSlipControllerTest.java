@@ -1,5 +1,6 @@
 package se.callista.springmvc.asynch.pattern.routingslip;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -118,12 +119,14 @@ public class RoutingSlipControllerTest extends AsynchTestBase {
         testNonBlocking(url, SC_OK, expectedResultOLD);
     }
 
+    @Ignore
     @Test
     public void testRoutingSlipNonBlockingAkkaFuturesInvalidInput() throws Exception {
         String url = "/routing-slip-non-blocking-akkafutures?qry=error";
         testNonBlocking(url, SC_INTERNAL_SERVER_ERROR, expectedInvalidInputError);
     }
 
+    @Ignore
     @Test
     public void testRoutingSlipNonBlockingAkkaFuturesTimeout() throws Exception {
         String url = "/routing-slip-non-blocking-akkafutures?qry=timeout";
