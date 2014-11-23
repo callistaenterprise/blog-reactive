@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.web.context.request.async.DeferredResult;
 import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAware;
+import se.callista.springmvc.asynch.pattern.aggregator.DbLookup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,8 +64,8 @@ public class Executor {
 
         // Start with a blocking db-lookup of the urls to call
         dbThreadPoolExecutor.execute(() -> {
-            LOG.debug("Start dblookup");
-            List<String> urls = lookupUrlsInDb();
+            LOG.debug("Start db-lookup");
+            List<String> urls = new DbLookup(dbLookupMs, dbHits).lookupUrlsInDb(baseUrl, minMs, maxMs);
             LOG.debug("Db found #{} urls", urls.size());
 
             // Now setup concurrent and asynch non-blocking calls the the urls
@@ -94,31 +95,6 @@ public class Executor {
         // Ok, everything is now setup for asynchronous processing, let the play begin...
         LOG.debug("Asynch processing setup, return the request thread to the thread-pool");
         return deferredResult;
-    }
-
-    /**
-     * Performs a blocking db-lookup to find urls to make the calls to
-     *
-     * @return
-     */
-    private List<String> lookupUrlsInDb() {
-
-        // Start of blocking db-lookup
-        List<String> urls = new ArrayList<String>();
-
-        // Simulate a blocking db-lookup by putting the current thread to sleep for a while...
-        try {
-            Thread.sleep(dbLookupMs);
-        } catch (InterruptedException e) {}
-
-        for (int i = 0; i < dbHits; i++) {
-            // Use one and the same address for all returned URL's
-            urls.add(baseUrl + "?minMs=" + minMs + "&maxMs=" + maxMs);
-        }
-
-        // Processing of blocking db-lookup done
-
-        return urls;
     }
 
     /**

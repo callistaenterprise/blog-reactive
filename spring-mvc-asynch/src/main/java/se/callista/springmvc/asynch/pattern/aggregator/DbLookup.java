@@ -19,6 +19,10 @@ public class DbLookup {
         this.dbHits = dbHits;
     }
 
+    /**
+     * @deprecated use lookupUrlsInDb
+     * @return
+     */
     public int executeDbLookup() {
 
         // Start of blocking dbLookup
@@ -29,6 +33,7 @@ public class DbLookup {
     }
 
     public List<String> lookupUrlsInDb(String baseUrl, int minMs, int maxMs) {
+
         logger.debug("Lookup Db urls");
         // Start of blocking db-lookup
         List<String> urls = new ArrayList<>();

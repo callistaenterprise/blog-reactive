@@ -1,5 +1,6 @@
 package se.callista.springmvc.asynch.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
@@ -26,6 +27,7 @@ import java.util.Map;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.commons.io.IOUtils.write;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -76,6 +78,33 @@ abstract public class AsynchTestBase extends EmbeddedHttpServerTestBase {
                 .andExpect(content().string(expectedContent));
     }
 
+    protected void testNonBlockingTimeout(String url, int timeoutDbHits1, int timeoutMs1) throws Exception {
+        MvcResult mvcResult = this.mockMvc.perform(get(url))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mvcResult.getAsyncResult();
+
+        this.mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/plain;charset=ISO-8859-1"));
+
+        String result = mvcResult.getAsyncResult().toString();
+
+        LOG.debug("JSON: {}", result);
+        String[] psArr = result.split("\n");
+
+        // Verify that we got some timeouts
+        assertTrue("Expected at least one timeout to occur", psArr.length < timeoutDbHits1);
+
+        LOG.debug("assert that no response time was over the timeout: {}", timeoutMs1);
+        ObjectMapper mapper = new ObjectMapper();
+        for (String aPsArr : psArr) {
+            ProcessingStatus ps = mapper.readValue(aPsArr, ProcessingStatus.class);
+            LOG.debug("psArr: {} - {}", ps.getStatus(), ps.getProcessingTimeMs());
+            assertTrue(ps.getProcessingTimeMs() < timeoutMs1);
+        }
+    }
 
 
 
