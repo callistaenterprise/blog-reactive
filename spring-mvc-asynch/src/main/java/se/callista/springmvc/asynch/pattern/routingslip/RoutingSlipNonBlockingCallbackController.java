@@ -24,7 +24,7 @@ import static se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientL
 @RestController
 public class RoutingSlipNonBlockingCallbackController {
 
-    private class Result {
+    private class State {
         List<String> resultList = new ArrayList<>();
 
         public boolean processResult(String result) {
@@ -62,7 +62,7 @@ public class RoutingSlipNonBlockingCallbackController {
         @RequestParam (value = "qry",    required = false, defaultValue = "")    String qry) {
 
         DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>();
-        Result r = new Result();
+        State state = new State();
 
         // Kick off the asynch processing of five sequentially executed asynch processing steps
 
@@ -84,7 +84,7 @@ public class RoutingSlipNonBlockingCallbackController {
                     return;
                 }
 
-                r.processResult(r1.getResponseBody());
+                state.processResult(r1.getResponseBody());
 
                 // Send request #2
                 LOG.debug("Start req #2");
@@ -105,7 +105,7 @@ public class RoutingSlipNonBlockingCallbackController {
                         }
 
                         // Process response #2
-                        boolean ok = r.processResult(r2.getResponseBody());
+                        boolean ok = state.processResult(r2.getResponseBody());
 
                         // Select the next step depending on the outcome from the previous step
                         int reqId = ok ? 4 : 3;
@@ -130,7 +130,7 @@ public class RoutingSlipNonBlockingCallbackController {
 
 
                                 // Process response #3 or #4
-                                r.processResult(r3or4.getResponseBody());
+                                state.processResult(r3or4.getResponseBody());
 
                                 // Send request #5
                                 LOG.debug("Start req #5");
@@ -151,11 +151,11 @@ public class RoutingSlipNonBlockingCallbackController {
                                         LOG.debug("Got resp #5 ({})", r1.getStatusCode());
 
                                         // Process response #5
-                                        r.processResult(r5.getResponseBody());
+                                        state.processResult(r5.getResponseBody());
 
                                         // Get the total result and set it on the deferred result
                                         LOG.debug("We are done, setting the result on the deferred result!");
-                                        boolean deferredStatus = deferredResult.setResult(createResponseEntity(r.getTotalResult(), HttpStatus.OK));
+                                        boolean deferredStatus = deferredResult.setResult(createResponseEntity(state.getTotalResult(), HttpStatus.OK));
                                     }
                                 );
                             }
