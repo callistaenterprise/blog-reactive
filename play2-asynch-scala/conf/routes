@@ -1,0 +1,5 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+GET        /aggregate           controllers.Application.aggregate(dbLookupMs: Int ?= 0, dbHits: Int ?= 3, minMs: Int, maxMs: Int)
+GET        /routing-slip        controllers.Application.routingSlip
