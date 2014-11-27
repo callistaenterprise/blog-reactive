@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncCallException;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
+import se.callista.springmvc.asynch.common.AsyncCallException;
+import se.callista.springmvc.asynch.common.AsyncHttpClientJava8;
 
 import java.io.IOException;
 import java.util.ArrayList;

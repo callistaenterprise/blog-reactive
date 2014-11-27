@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import rx.Observable;
 import rx.Subscription;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncCallException;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
-import se.callista.springmvc.asynch.common.lambdasupport.RequestFailureException;
+import se.callista.springmvc.asynch.common.AsyncCallException;
+import se.callista.springmvc.asynch.common.AsyncHttpClientRx;
+import se.callista.springmvc.asynch.common.RequestFailureException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx.createResponseEntity;
+import static se.callista.springmvc.asynch.common.AsyncHttpClientRx.createResponseEntity;
 
 @RestController
 public class RoutingSlipNonBlockingRxController {

@@ -15,7 +15,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import rx.Observable;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
+import se.callista.springmvc.asynch.common.AsyncHttpClientRx;
 
 import java.io.IOException;
 import java.util.List;

@@ -1,4 +1,4 @@
-package se.callista.springmvc.asynch.common.lambdasupport;
+package se.callista.springmvc.asynch.common;
 
 import akka.dispatch.Futures;
 import com.ning.http.client.AsyncCompletionHandler;

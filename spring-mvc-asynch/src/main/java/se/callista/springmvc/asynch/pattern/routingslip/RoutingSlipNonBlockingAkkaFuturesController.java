@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import scala.concurrent.ExecutionContextExecutor;
 import scala.concurrent.Future;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientAkka;
+import se.callista.springmvc.asynch.common.AsyncHttpClientAkka;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static se.callista.springmvc.asynch.common.lambdasupport.AkkaUtils.completer;
-import static se.callista.springmvc.asynch.common.lambdasupport.AkkaUtils.mapper;
+import static se.callista.springmvc.asynch.common.AkkaUtils.completer;
+import static se.callista.springmvc.asynch.common.AkkaUtils.mapper;
 
 /**
  * @author Pär Wenåker <par.wenaker@callistaenterprise.se>

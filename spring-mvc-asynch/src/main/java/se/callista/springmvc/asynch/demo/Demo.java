@@ -2,7 +2,7 @@ package se.callista.springmvc.asynch.demo;
 
 import com.ning.http.client.Response;
 import org.json.JSONObject;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
+import se.callista.springmvc.asynch.common.AsyncHttpClientJava8;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;

@@ -13,10 +13,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientAkka;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientLambdaAware;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientRx;
+import se.callista.springmvc.asynch.common.AsyncHttpClientAkka;
+import se.callista.springmvc.asynch.common.AsyncHttpClientJava8;
+import se.callista.springmvc.asynch.common.AsyncHttpClientLambdaAware;
+import se.callista.springmvc.asynch.common.AsyncHttpClientRx;
 import se.callista.springmvc.asynch.config.MyEmbeddedServletContainerCustomizer;
 
 import java.util.concurrent.Executors;
