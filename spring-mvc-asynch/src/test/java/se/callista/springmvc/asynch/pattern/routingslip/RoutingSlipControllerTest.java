@@ -21,10 +21,11 @@ import static javax.servlet.http.HttpServletResponse.*;
 public class RoutingSlipControllerTest extends AsynchTestBase {
 
     private static final String expectedResult =
-        "{\"status\":\"Ok\",\"processingTimeMs\":100}\n" +
-        "{\"status\":\"Ok\",\"processingTimeMs\":200}\n" +
-        "{\"status\":\"Ok\",\"processingTimeMs\":400}\n" +
-        "{\"status\":\"Ok\",\"processingTimeMs\":500}\n";
+            "{\"status\":\"Ok\",\"processingTimeMs\":100}\n" +
+                    "{\"status\":\"Ok\",\"processingTimeMs\":200}\n" +
+                    "{\"status\":\"Ok\",\"processingTimeMs\":400}\n" +
+                    "{\"status\":\"Ok\",\"processingTimeMs\":500}\n";
+
 
     private static final String expectedInvalidInputError = "Error: Invalid query parameter, qry=error";
 
@@ -93,7 +94,7 @@ public class RoutingSlipControllerTest extends AsynchTestBase {
     @Test
     public void testRoutingSlipNonBlockingJava8() throws Exception {
         String url = "/routing-slip-non-blocking-java8";
-        testNonBlocking(url, SC_OK, expectedResultOLD);
+        testNonBlocking(url, SC_OK, expectedResult.trim());
     }
 
     @Test

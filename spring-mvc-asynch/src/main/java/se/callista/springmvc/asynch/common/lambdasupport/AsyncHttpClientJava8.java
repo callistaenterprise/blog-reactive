@@ -25,8 +25,6 @@ public class AsyncHttpClientJava8 {
                 @Override
                 public Response onCompleted(Response response) throws Exception {
                     logger.debug("Request #{} completed successfully", id);
-
-//                    result.completeExceptionally(new IOException("Async Exception"));
                     result.complete(response);
                     return response;
                 }
