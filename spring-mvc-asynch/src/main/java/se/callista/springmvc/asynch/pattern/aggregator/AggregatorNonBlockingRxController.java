@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,6 +77,7 @@ public class AggregatorNonBlockingRxController {
      */
     @RequestMapping("/aggregate-non-blocking-rx")
     public DeferredResult<String> nonBlockingAggregator(
+        @RequestHeader(value = "Accept",     required = false, defaultValue = "*/*") String accept,
         @RequestParam(value = "dbLookupMs", required = false, defaultValue = "0")    int dbLookupMs,
         @RequestParam(value = "dbHits",     required = false, defaultValue = "3")    int dbHits,
         @RequestParam(value = "minMs",      required = false, defaultValue = "0")    int minMs,
@@ -91,7 +93,7 @@ public class AggregatorNonBlockingRxController {
                 .filter(request -> request.id > 0)
                 .flatMap(request ->
                     asyncHttpClientRx
-                        .observable(request.url)
+                        .observable(request.url, accept)
                         .map(this::getResponseBody)
                         .timeout(TIMEOUT_MS, TimeUnit.MILLISECONDS, Observable.empty())
                         .onErrorReturn(t -> handleException(t, request))
