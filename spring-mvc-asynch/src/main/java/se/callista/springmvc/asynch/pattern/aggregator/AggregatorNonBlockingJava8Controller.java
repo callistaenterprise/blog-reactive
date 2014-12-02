@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -88,7 +87,7 @@ public class AggregatorNonBlockingJava8Controller {
 		logger.debug("Start asynch call #{}", id);
 		return asyncHttpClientJava8.execute(url, id)
 				.thenApply(response -> Optional.of(extractResponseBody(response)))
-				.applyToEither(TimeoutDefault.with(TIMEOUT_MS), identity())
+				.applyToEither(TimeoutFuture.after(TIMEOUT_MS), identity())
 				.exceptionally(t -> Optional.of("Request #" + id + " failed due to error: " + t.getMessage()));
 	}
 

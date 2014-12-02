@@ -8,12 +8,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 
-public class TimeoutDefault {
+public class TimeoutFuture {
 
-	private static final Logger logger = LoggerFactory.getLogger(TimeoutDefault.class);
+	private static final Logger logger = LoggerFactory.getLogger(TimeoutFuture.class);
 	private static final Timer timer = new Timer();
 
-	public static <T> CompletableFuture<Optional<T>> with(int ms) {
+	public static <T> CompletableFuture<Optional<T>> after(int ms) {
 		final CompletableFuture<T> result = new CompletableFuture<>();
 
 		timer.schedule(new TimerTask() {
