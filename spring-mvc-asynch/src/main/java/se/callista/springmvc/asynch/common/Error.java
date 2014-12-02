@@ -1,4 +1,4 @@
-package se.callista.springmvc.asynch.common.lambdasupport;
+package se.callista.springmvc.asynch.common;
 
 /**
  * Created by magnus on 18/07/14.

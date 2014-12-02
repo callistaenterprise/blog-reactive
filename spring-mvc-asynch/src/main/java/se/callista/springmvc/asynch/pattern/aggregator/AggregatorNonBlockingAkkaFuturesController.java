@@ -18,7 +18,7 @@ import scala.concurrent.ExecutionContextExecutor;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.FiniteDuration;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientAkka;
+import se.callista.springmvc.asynch.common.AsyncHttpClientAkka;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,9 +30,9 @@ import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import static akka.dispatch.Futures.future;
-import static se.callista.springmvc.asynch.common.lambdasupport.AkkaUtils.completer;
-import static se.callista.springmvc.asynch.common.lambdasupport.AkkaUtils.mapper;
-import static se.callista.springmvc.asynch.common.lambdasupport.AkkaUtils.runnable;
+import static se.callista.springmvc.asynch.common.AkkaUtils.completer;
+import static se.callista.springmvc.asynch.common.AkkaUtils.mapper;
+import static se.callista.springmvc.asynch.common.AkkaUtils.runnable;
 
 /**
  * @author Pär Wenåker <par.wenaker@callistaenterprise.se>

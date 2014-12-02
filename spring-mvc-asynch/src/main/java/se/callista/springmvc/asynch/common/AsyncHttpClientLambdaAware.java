@@ -1,4 +1,4 @@
-package se.callista.springmvc.asynch.common.lambdasupport;
+package se.callista.springmvc.asynch.common;
 
 import com.ning.http.client.*;
 import org.springframework.beans.factory.annotation.Autowired;

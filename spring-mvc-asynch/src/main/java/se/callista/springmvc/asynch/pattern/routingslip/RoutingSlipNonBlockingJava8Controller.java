@@ -8,7 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
-import se.callista.springmvc.asynch.common.lambdasupport.AsyncHttpClientJava8;
+import se.callista.springmvc.asynch.common.AsyncCallException;
+import se.callista.springmvc.asynch.common.AsyncHttpClientJava8;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -123,19 +124,6 @@ public class RoutingSlipNonBlockingJava8Controller {
 	private static <T> T throwNewException(String url, Throwable t) {
 		LOG.error("Error on aync call to {}. {}", url, t);
 		throw new AsyncCallException(url, t);
-	}
-
-	public static class AsyncCallException extends RuntimeException {
-		private String url;
-
-		public AsyncCallException(String url, Throwable cause) {
-			super(cause);
-			this.url = url;
-		}
-
-		public String getUrl() {
-			return url;
-		}
 	}
 
 }
