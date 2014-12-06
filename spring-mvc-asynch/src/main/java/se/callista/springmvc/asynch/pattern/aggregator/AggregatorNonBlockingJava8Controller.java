@@ -62,15 +62,18 @@ public class AggregatorNonBlockingJava8Controller {
 		final DeferredResult<String> deferredResult = new DeferredResult<>();
 		final DbLookup dbLookup = new DbLookup(dbLookupMs, dbHits);
 
-		supplyAsync(() -> dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs), dbThreadPoolExecutor)
-				.thenComposeAsync(this::executeHttpRequests)
-				.whenComplete((result, throwable) -> {
-					if (throwable == null) {
-						populateDeferredResult(deferredResult, result);
-					} else {
-						deferredResult.setErrorResult(throwable);
-					}
-				});
+		final CompletableFuture<List<String>> urlsF =
+				supplyAsync(() -> dbLookup.lookupUrlsInDb(SP_NON_BLOCKING_URL, minMs, maxMs), dbThreadPoolExecutor);
+
+		urlsF
+			.thenComposeAsync(this::executeHttpRequests)
+			.whenComplete((result, throwable) -> {
+				if (throwable == null) {
+					populateDeferredResult(deferredResult, result);
+				} else {
+					deferredResult.setErrorResult(throwable);
+				}
+			});
 
 		return deferredResult;
 	}
@@ -78,7 +81,10 @@ public class AggregatorNonBlockingJava8Controller {
 
 	private CompletableFuture<List<String>> executeHttpRequests(List<String> urls) {
 		CompletableFuture<List<Optional<String>>> futureResponses =
-				sequence(IntStream.rangeClosed(1, urls.size()).mapToObj(i -> doAsyncCall(urls.get(i - 1), i)).collect(Collectors.toList()));
+				sequence(
+						IntStream.rangeClosed(1, urls.size()).mapToObj(i ->
+								doAsyncCall(urls.get(i - 1), i)
+						).collect(Collectors.toList()));
 
 		return futureResponses.thenApply(this::filterResponses);
 	}
