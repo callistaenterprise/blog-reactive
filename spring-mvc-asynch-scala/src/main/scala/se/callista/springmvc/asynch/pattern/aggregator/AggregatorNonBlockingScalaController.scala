@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.web.bind.annotation.{RequestMapping, RequestParam, RestController}
 import org.springframework.web.context.request.async.DeferredResult
-import se.callista.springmvc.asynch.commons.lambdasupport.AsyncHttpClientScala
+import se.callista.springmvc.asynch.commons.AsyncHttpClientScala
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{firstCompletedOf, sequence}
@@ -34,7 +34,6 @@ class AggregatorNonBlockingScalaController {
 	}
 
 	private val logger = LoggerFactory.getLogger(classOf[AggregatorNonBlockingScalaController])
-	private lazy val dbThreadPoolExecutor = ExecutionContext.fromExecutor(taskExecutor)
 	private lazy val timeoutScheduler = Executors.newSingleThreadScheduledExecutor
 
 	@RequestMapping(Array("/aggregate-non-blocking-scala"))
@@ -45,30 +44,32 @@ class AggregatorNonBlockingScalaController {
 
 		val deferredResult = new DeferredResult[String]
 
-		doDbLookup(dbLookupMs, dbHits, minMs, maxMs)
-				.flatMap(urls => sequence(urls.map(url => firstCompletedOf(asyncCall(url) :: timeoutFuture :: Nil))))
-				.map(results => results.filterNot(result => result.isInstanceOf[Throwable]))
-				.andThen {
-					case Success(results) => deferredResult.setResult(results.mkString("\n"))
-					case Failure(t) => deferredResult.setErrorResult(t)
-				}
+		val urlsF = doDbLookup(dbLookupMs, dbHits, minMs, maxMs)(ExecutionContext.fromExecutor(taskExecutor))
+
+		val resultsF = urlsF.flatMap { urls =>
+			sequence(
+				urls.map(url => asyncCall(url))
+			)
+		}
+
+		resultsF.map(results => deferredResult.setResult(results.mkString("\n")))
 
 		deferredResult
 	}
 
 	def asyncCall(url: String): Future[String] = {
 		logger.debug(s"Remote call to: $url")
-		AsyncHttpClientScala.execute(url).map(response => response.getResponseBody())
+		AsyncHttpClientScala.get(url).map(response => response.getResponseBody)
 	}
 
-	def doDbLookup(dbLookupMs: Int, dbHits: Int, minMs: Int, maxMs: Int): Future[List[String]] = Future {
+	def doDbLookup(dbLookupMs: Int, dbHits: Int, minMs: Int, maxMs: Int)(dbThreadPoolExecutor: ExecutionContext): Future[List[String]] = Future {
 		logger.debug("Fake db lookup")
 		Thread.sleep(dbLookupMs)
 		List.fill(dbHits)(s"$SP_NON_BLOCKING_URL?minMs=$minMs&maxMs=$maxMs")
 	}(dbThreadPoolExecutor)
 
-	private def timeoutFuture(): Future[Throwable] = {
-		val p = Promise[Throwable]
+	private def timeoutFuture() = {
+		val p = Promise[Throwable]()
 
 		timeoutScheduler.schedule(new Runnable {
 			override def run() = {

@@ -4,11 +4,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.{RequestMapping, RestController}
 import org.springframework.web.context.request.async.DeferredResult
-import se.callista.springmvc.asynch.commons.lambdasupport.AsyncHttpClientScala
+import se.callista.springmvc.asynch.commons.AsyncHttpClientScala
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{duration, Future}
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 
@@ -20,26 +18,24 @@ class RoutingSlipNonBlockingScalaController {
 	@Value("${sp.non_blocking.url}")
 	val SP_NON_BLOCKING_URL: String = null
 
-
 	@RequestMapping(Array("/routing-slip-non-blocking-scala"))
 	def nonBlockingRoutingSlip: DeferredResult[String] = {
 		val deferredResult = new DeferredResult[String]()
-		for {
-			r1 <- doAsyncCall(nonBlockingUrl(latency = 100 milliseconds))
-			r2 <- doAsyncCall(nonBlockingUrl(latency = 200 milliseconds))
-			r3 <- doAsyncCall(nonBlockingUrl(latency = 300 milliseconds))
-			r4 <- doAsyncCall(nonBlockingUrl(latency = 400 milliseconds))
-			r5 <- doAsyncCall(nonBlockingUrl(latency = 500 milliseconds))
-		} yield deferredResult.setResult(List(r1, r2, r3, r4, r5).mkString("\n"))
-
+		val result =
+			for {
+				r1 <- doAsyncCall(1)
+				r2 <- doAsyncCall(2)
+				r3 <- doAsyncCall(routeCall(r2))
+				r4 <- doAsyncCall(5)
+			} yield List(r1, r2, r3, r4)
+		result.map(v => deferredResult.setResult(v.mkString("\n")))
 		deferredResult
 	}
 
-	def doAsyncCall(url: String): Future[String] = {
-		AsyncHttpClientScala.execute(url).map(response => response.getResponseBody())
-	}
+	def doAsyncCall(num: Integer) = AsyncHttpClientScala.get(nonBlockingUrl(num)).map(r => r.getResponseBody)
 
-	def nonBlockingUrl(latency: Duration):String = s"$SP_NON_BLOCKING_URL?minMs=${latency.toMillis}&maxMs=${latency.toMillis}"
+	def nonBlockingUrl(id: Integer) = s"$SP_NON_BLOCKING_URL?minMs=${id*100}&maxMs=${id*100}"
+	def routeCall(result: String) = 4
 }
 
 object RoutingSlipNonBlockingScalaController {

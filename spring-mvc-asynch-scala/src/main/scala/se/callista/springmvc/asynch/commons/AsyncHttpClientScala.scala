@@ -1,9 +1,9 @@
-package se.callista.springmvc.asynch.commons.lambdasupport
+package se.callista.springmvc.asynch.commons
 
-import com.ning.http.client.{AsyncCompletionHandler, Response, AsyncHttpClient}
+import com.ning.http.client.{AsyncCompletionHandler, AsyncHttpClient, Response}
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{Future, Promise}
 
 /**
  * Created by anders on 14-11-04.
@@ -13,7 +13,7 @@ object AsyncHttpClientScala {
 	private val logger = LoggerFactory.getLogger(AsyncHttpClientScala.getClass)
 	private val asyncHttpClient = new AsyncHttpClient();
 
-	def execute(url: String): Future[Response] = {
+	def get(url: String): Future[Response] = {
 		val result = Promise[Response]
 
 		asyncHttpClient.prepareGet(url).execute(new AsyncCompletionHandler[Response] {
