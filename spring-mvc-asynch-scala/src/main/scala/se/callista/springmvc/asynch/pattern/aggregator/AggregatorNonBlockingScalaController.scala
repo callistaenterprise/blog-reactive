@@ -46,10 +46,11 @@ class AggregatorNonBlockingScalaController {
 
 		val urlsF = doDbLookup(dbLookupMs, dbHits, minMs, maxMs)(ExecutionContext.fromExecutor(taskExecutor))
 
-		val resultsF = urlsF.flatMap { urls =>
-			sequence(
-				urls.map(url => asyncCall(url))
-			)
+		val resultsF = urlsF.flatMap(urls => sequence(urls.map(url => firstCompletedOf(asyncCall(url) :: timeoutFuture :: Nil))))
+				.map(results => results.filterNot(result => result.isInstanceOf[Throwable]))
+				.andThen {
+			case Success(results) => deferredResult.setResult(results.mkString("\n"))
+			case Failure(t) => deferredResult.setErrorResult(t)
 		}
 
 		resultsF.map(results => deferredResult.setResult(results.mkString("\n")))
